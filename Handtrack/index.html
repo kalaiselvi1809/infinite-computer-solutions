@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hand Tracking Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/handpose"></script>
+</head>
+<body>
+    <h1>Hand Tracking Test</h1>
+    <canvas id="canvas"></canvas>
+    <script>
+        const video = document.createElement('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        async function setup() {
+            canvas.width = 640;
+            canvas.height = 480;
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+                video.play();
+                console.log("Webcam is working, starting hand detection...");
+                detectHand();
+            } catch (err) {
+                console.error("Error accessing webcam:", err);
+                alert("Please allow camera access.");
+            }
+
+            // Load the hand tracking model
+            const model = await handpose.load();
+            console.log("Handpose model loaded.");
+            
+            async function detectHand() {
+                const predictions = await model.estimateHands(video);
+                console.log(predictions);  // Log predictions
+
+                if (predictions.length > 0) {
+                    const hand = predictions[0];
+                    const indexFinger = hand.landmarks[8]; // Index finger tip (landmark 8)
+
+                    // Draw the index finger
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.beginPath();
+                    ctx.arc(indexFinger[0], indexFinger[1], 10, 0, 2 * Math.PI);
+                    ctx.fillStyle = 'red';
+                    ctx.fill();
+                }
+
+                requestAnimationFrame(detectHand);
+            }
+        }
+
+        window.onload = setup;
+    </script>
+</body>
+</html>
